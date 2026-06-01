@@ -1,0 +1,198 @@
+# img2img-turbo Windows 环境安装记录
+
+## Step 1 创建环境
+
+```bash
+conda create -p E:\UKMJIAO\my_envs\img2img_turbo_env python=3.10 -y
+
+conda activate E:\UKMJIAO\my_envs\img2img_turbo_env
+```
+
+---
+
+## Step 2 安装 PyTorch
+
+CUDA 11.8：
+
+```bash
+pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+```
+
+验证：
+
+```bash
+python -c "import torch;print(torch.__version__)"
+python -c "import torch;print(torch.cuda.is_available())"
+```
+
+---
+
+## Step 3 安装项目依赖
+
+```bash
+pip install -r requirements_jack.txt
+```
+
+
+
+---
+
+## Step 4 修复 huggingface_hub 版本
+
+若出现：
+
+```text
+ImportError:
+huggingface-hub>=0.16.4,<1.0 is required
+```
+
+执行：
+
+```bash
+pip install huggingface_hub==0.20.3
+```
+
+验证：
+
+```bash
+python -c "import transformers;print(transformers.__version__)"
+```
+
+---
+
+## Step 5 设置模型缓存目录
+
+运行脚本前加入：
+
+```python
+import os
+
+os.environ["HF_HOME"] = r"models"
+```
+
+模型会自动下载到：
+
+```text
+\models\hub
+```
+
+避免占用 C 盘。
+
+
+Step 5.1 首次运行可能需要较长时间
+
+首次运行会自动下载：
+
+SD-Turbo 基础模型
+
+约 13GB
+
+目录：
+
+models\hub\models--stabilityai--sd-turbo
+clear2rainy.pkl
+
+约 1.69GB
+
+目录：
+
+checkpoints\clear2rainy.pkl
+
+总下载量约：
+
+15GB
+
+首次运行可能需要数十分钟，请耐心等待。
+
+下载完成后，后续运行不会重复下载。
+---
+
+## Step 6 首次运行自动下载模型
+
+首次运行会自动下载：
+
+### SD-Turbo 基础模型
+
+约：
+
+```text
+13 GB
+```
+
+存放位置：
+
+```text
+\models\hub\models--stabilityai--sd-turbo
+```
+
+### clear2rainy.pkl
+
+约：
+
+```text
+1.69 GB
+```
+
+存放位置：
+
+```text
+img2img-turbo-main\checkpoints\clear2rainy.pkl
+```
+
+后续运行不会重复下载。
+
+---
+
+## Step 7 关闭 xformers
+
+如果出现：
+
+```text
+ModuleNotFoundError: xformers
+```
+
+打开：
+
+```text
+src\inference_unpaired.py
+```
+
+注释：
+
+```python
+model.unet.enable_xformers_memory_efficient_attention()
+```
+
+改为：
+
+```python
+# model.unet.enable_xformers_memory_efficient_attention()
+```
+
+Windows 环境通常可以直接关闭。
+
+---
+
+## Step 8 验证安装
+
+```bash
+python -c "import torch;print(torch.__version__)"
+python -c "import diffusers;print(diffusers.__version__)"
+python -c "import transformers;print(transformers.__version__)"
+python -c "import open_clip;print('ok')"
+
+python src/inference_unpaired.py --help
+```
+
+全部正常输出即表示环境安装成功。
+
+---
+
+## Step 9 测试生成雨天图
+
+```bash
+python src/inference_unpaired.py ^
+--model_name clear_to_rainy ^
+--input_image test.jpg ^
+--output_dir outputs_test
+```
