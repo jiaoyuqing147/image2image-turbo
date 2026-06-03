@@ -1,10 +1,23 @@
+
 import os
 import sys
 from pathlib import Path
 
-os.environ["HF_HOME"] = "models"
+# ==================================================
+# ROOT
+# ==================================================
 
 ROOT = Path(__file__).resolve().parent
+
+# ==================================================
+# HuggingFace 本地缓存 + 离线模式
+# ==================================================
+
+os.environ["HF_HOME"] = str(ROOT / "models")
+
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["DIFFUSERS_OFFLINE"] = "1"
 
 # 让Python找到src目录
 sys.path.insert(
@@ -32,21 +45,13 @@ INPUT_DIR = (
     DATA_ROOT /
     "tt100k_60" /
     "images" /
-    "train"
-)
-
-LOWLIGHT_LIST = (
-    DATA_ROOT /
-    "tt100k_60_weather" /
-    "lowlight.txt"
+    "test"
 )
 
 OUTPUT_DIR = (
     DATA_ROOT /
     "tt100k_60_weather" /
-    "lowlight" /
-    "images" /
-    "train"
+    "test_lowlight"
 )
 
 OUTPUT_DIR.mkdir(
@@ -57,9 +62,8 @@ OUTPUT_DIR.mkdir(
 print("=" * 60)
 print("Dataset Paths")
 print("=" * 60)
-print(f"INPUT_DIR     : {INPUT_DIR}")
-print(f"LOWLIGHT_LIST : {LOWLIGHT_LIST}")
-print(f"OUTPUT_DIR    : {OUTPUT_DIR}")
+print(f"INPUT_DIR  : {INPUT_DIR}")
+print(f"OUTPUT_DIR : {OUTPUT_DIR}")
 print()
 
 # ==================================================
@@ -109,59 +113,37 @@ except:
 # FP16
 model.half()
 
-# T_val = build_transform(
-#     "resize_512x512"
-# )
-
 T_val = build_transform(
-     "resize_1024x1024"
+    "resize_1024x1024"
 )
 
 print("Model loaded.")
 print()
 
 # ==================================================
-# 读取图片列表
+# 读取 test 文件夹全部图像
 # ==================================================
 
-with open(
-        LOWLIGHT_LIST,
-        "r",
-        encoding="utf-8") as f:
-
-    image_names = [
-        line.strip()
-        for line in f
-        if line.strip()
-    ]
+image_paths = sorted(
+    list(INPUT_DIR.glob("*.jpg")) +
+    list(INPUT_DIR.glob("*.png")) +
+    list(INPUT_DIR.glob("*.jpeg"))
+)
 
 print(
-    f"Need process: {len(image_names)} images"
+    f"Need process: {len(image_paths)} images"
 )
 
 # 测试时打开
-# image_names = image_names[:10]
+# image_paths = image_paths[:10]
 
 # ==================================================
 # 开始推理
 # ==================================================
 
-for idx, stem in enumerate(
-        image_names,
+for idx, img_path in enumerate(
+        image_paths,
         start=1):
-
-    img_path = (
-        INPUT_DIR /
-        f"{stem}.jpg"
-    )
-
-    if not img_path.exists():
-
-        print(
-            f"[Skip] {img_path}"
-        )
-
-        continue
 
     try:
 
@@ -200,14 +182,6 @@ for idx, stem in enumerate(
             output[0].cpu() * 0.5 + 0.5
         )
 
-        # output_pil = output_pil.resize(
-        #     (
-        #         input_image.width,
-        #         input_image.height
-        #     ),
-        #     Image.LANCZOS
-        # )
-
         save_path = (
             OUTPUT_DIR /
             img_path.name
@@ -218,7 +192,7 @@ for idx, stem in enumerate(
         )
 
         print(
-            f"[{idx}/{len(image_names)}] "
+            f"[{idx}/{len(image_paths)}] "
             f"{img_path.name}"
         )
 
@@ -232,5 +206,6 @@ for idx, stem in enumerate(
 
 print()
 print("=" * 60)
-print("Lowlight Generation Finished")
+print("Test Lowlight Generation Finished")
 print("=" * 60)
+

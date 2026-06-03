@@ -1,8 +1,15 @@
+
 import os
 import sys
 from pathlib import Path
 
-os.environ["HF_HOME"] = "models"
+ROOT = Path(__file__).resolve().parent
+
+os.environ["HF_HOME"] = str(ROOT / "models")
+
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["DIFFUSERS_OFFLINE"] = "1"
 
 ROOT = Path(__file__).resolve().parent
 
@@ -28,25 +35,19 @@ DATA_ROOT = Path(
     "/home/jiaoyuqing/datasets/tt100k_2021_paper2"
 )
 
+# test图像目录
 INPUT_DIR = (
     DATA_ROOT /
     "tt100k_60" /
     "images" /
-    "train"
+    "test"
 )
 
-LOWLIGHT_LIST = (
-    DATA_ROOT /
-    "tt100k_60_weather" /
-    "lowlight.txt"
-)
-
+# 雨天输出目录
 OUTPUT_DIR = (
     DATA_ROOT /
     "tt100k_60_weather" /
-    "lowlight" /
-    "images" /
-    "train"
+    "test_rain"
 )
 
 OUTPUT_DIR.mkdir(
@@ -57,9 +58,8 @@ OUTPUT_DIR.mkdir(
 print("=" * 60)
 print("Dataset Paths")
 print("=" * 60)
-print(f"INPUT_DIR     : {INPUT_DIR}")
-print(f"LOWLIGHT_LIST : {LOWLIGHT_LIST}")
-print(f"OUTPUT_DIR    : {OUTPUT_DIR}")
+print(f"INPUT_DIR  : {INPUT_DIR}")
+print(f"OUTPUT_DIR : {OUTPUT_DIR}")
 print()
 
 # ==================================================
@@ -89,11 +89,11 @@ print()
 # ==================================================
 
 print("=" * 60)
-print("Loading day_to_night model...")
+print("Loading clear_to_rainy model...")
 print("=" * 60)
 
 model = CycleGAN_Turbo(
-    pretrained_name="day_to_night"
+    pretrained_name="clear_to_rainy"
 )
 
 model.eval()
@@ -109,59 +109,33 @@ except:
 # FP16
 model.half()
 
-# T_val = build_transform(
-#     "resize_512x512"
-# )
-
+# 分辨率
 T_val = build_transform(
-     "resize_1024x1024"
+    "resize_1024x1024"
 )
 
 print("Model loaded.")
 print()
 
 # ==================================================
-# 读取图片列表
+# 获取所有jpg图像
 # ==================================================
 
-with open(
-        LOWLIGHT_LIST,
-        "r",
-        encoding="utf-8") as f:
-
-    image_names = [
-        line.strip()
-        for line in f
-        if line.strip()
-    ]
-
-print(
-    f"Need process: {len(image_names)} images"
+image_paths = sorted(
+    INPUT_DIR.glob("*.jpg")
 )
 
-# 测试时打开
-# image_names = image_names[:10]
+print(
+    f"Need process: {len(image_paths)} images"
+)
 
 # ==================================================
 # 开始推理
 # ==================================================
 
-for idx, stem in enumerate(
-        image_names,
+for idx, img_path in enumerate(
+        image_paths,
         start=1):
-
-    img_path = (
-        INPUT_DIR /
-        f"{stem}.jpg"
-    )
-
-    if not img_path.exists():
-
-        print(
-            f"[Skip] {img_path}"
-        )
-
-        continue
 
     try:
 
@@ -193,20 +167,12 @@ for idx, stem in enumerate(
 
             output = model(
                 x_t,
-                caption="driving at night"
+                caption="rainy weather"
             )
 
         output_pil = transforms.ToPILImage()(
             output[0].cpu() * 0.5 + 0.5
         )
-
-        # output_pil = output_pil.resize(
-        #     (
-        #         input_image.width,
-        #         input_image.height
-        #     ),
-        #     Image.LANCZOS
-        # )
 
         save_path = (
             OUTPUT_DIR /
@@ -218,7 +184,7 @@ for idx, stem in enumerate(
         )
 
         print(
-            f"[{idx}/{len(image_names)}] "
+            f"[{idx}/{len(image_paths)}] "
             f"{img_path.name}"
         )
 
@@ -232,5 +198,6 @@ for idx, stem in enumerate(
 
 print()
 print("=" * 60)
-print("Lowlight Generation Finished")
+print("Rain Generation Finished")
 print("=" * 60)
+
