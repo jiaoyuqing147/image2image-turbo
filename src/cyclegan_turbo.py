@@ -3,6 +3,12 @@ import sys
 import copy
 import torch
 import torch.nn as nn
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MODEL_DIR = ROOT / "models" / "sd-turbo"
+
 from transformers import AutoTokenizer, CLIPTextModel
 from diffusers import AutoencoderKL, UNet2DConditionModel
 from peft import LoraConfig
@@ -46,7 +52,8 @@ class VAE_decode(nn.Module):
 
 
 def initialize_unet(rank, return_lora_module_names=False):
-    unet = UNet2DConditionModel.from_pretrained("stabilityai/sd-turbo", subfolder="unet")
+    # unet = UNet2DConditionModel.from_pretrained("stabilityai/sd-turbo", subfolder="unet")
+    unet = UNet2DConditionModel.from_pretrained("str(MODEL_DIR)", subfolder="unet")
     unet.requires_grad_(False)
     unet.train()
     l_target_modules_encoder, l_target_modules_decoder, l_modules_others = [], [], []
@@ -77,7 +84,8 @@ def initialize_unet(rank, return_lora_module_names=False):
 
 
 def initialize_vae(rank=4, return_lora_module_names=False):
-    vae = AutoencoderKL.from_pretrained("stabilityai/sd-turbo", subfolder="vae")
+    # vae = AutoencoderKL.from_pretrained("stabilityai/sd-turbo", subfolder="vae")
+    vae = AutoencoderKL.from_pretrained(str(MODEL_DIR), subfolder="vae")
     vae.requires_grad_(False)
     vae.encoder.forward = my_vae_encoder_fwd.__get__(vae.encoder, vae.encoder.__class__)
     vae.decoder.forward = my_vae_decoder_fwd.__get__(vae.decoder, vae.decoder.__class__)
@@ -109,11 +117,18 @@ def initialize_vae(rank=4, return_lora_module_names=False):
 class CycleGAN_Turbo(torch.nn.Module):
     def __init__(self, pretrained_name=None, pretrained_path=None, ckpt_folder="checkpoints", lora_rank_unet=8, lora_rank_vae=4):
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained("stabilityai/sd-turbo", subfolder="tokenizer")
-        self.text_encoder = CLIPTextModel.from_pretrained("stabilityai/sd-turbo", subfolder="text_encoder").cuda()
+        # self.tokenizer = AutoTokenizer.from_pretrained("stabilityai/sd-turbo", subfolder="tokenizer")
+        # self.text_encoder = CLIPTextModel.from_pretrained("stabilityai/sd-turbo", subfolder="text_encoder").cuda()
+        # self.sched = make_1step_sched()
+        # vae = AutoencoderKL.from_pretrained("stabilityai/sd-turbo", subfolder="vae")
+        # unet = UNet2DConditionModel.from_pretrained("stabilityai/sd-turbo", subfolder="unet")
+
+        self.tokenizer = AutoTokenizer.from_pretrained(str(MODEL_DIR), subfolder="tokenizer")
+        self.text_encoder = CLIPTextModel.from_pretrained(str(MODEL_DIR), subfolder="text_encoder").cuda()
         self.sched = make_1step_sched()
-        vae = AutoencoderKL.from_pretrained("stabilityai/sd-turbo", subfolder="vae")
-        unet = UNet2DConditionModel.from_pretrained("stabilityai/sd-turbo", subfolder="unet")
+        vae = AutoencoderKL.from_pretrained(str(MODEL_DIR), subfolder="vae")
+        unet = UNet2DConditionModel.from_pretrained(str(MODEL_DIR), subfolder="unet")
+
         vae.encoder.forward = my_vae_encoder_fwd.__get__(vae.encoder, vae.encoder.__class__)
         vae.decoder.forward = my_vae_decoder_fwd.__get__(vae.decoder, vae.decoder.__class__)
         # add the skip connection convs

@@ -2,7 +2,13 @@ import os
 import sys
 from pathlib import Path
 
-os.environ["HF_HOME"] = "models"
+ROOT = Path(__file__).resolve().parent
+
+os.environ["HF_HOME"] = str(ROOT / "models")
+
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["DIFFUSERS_OFFLINE"] = "1"
 
 ROOT = Path(__file__).resolve().parent
 
@@ -25,7 +31,8 @@ from my_utils.training_utils import build_transform
 # ==================================================
 
 DATA_ROOT = Path(
-    r"E:\DataSets\tt100k_2021_paper2"
+    # r"E:\DataSets\tt100k_2021_paper2"
+    r"/home/jiaoyuqing/datasets/tt100k_2021_paper2"
 )
 
 INPUT_DIR = (
