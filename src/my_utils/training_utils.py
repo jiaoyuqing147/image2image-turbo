@@ -210,6 +210,11 @@ def build_transform(image_prep):
         T = transforms.Compose([
             transforms.Resize((512, 512), interpolation=Image.LANCZOS)
         ])
+    elif image_prep in ["resize_1024", "resize_1024x1024"]:
+        T = transforms.Compose([
+        transforms.Resize((1024, 1024), interpolation=Image.LANCZOS)
+    ])
+
     elif image_prep == "no_resize":
         T = transforms.Lambda(lambda x: x)
     return T
