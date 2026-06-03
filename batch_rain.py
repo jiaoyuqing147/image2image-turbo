@@ -77,7 +77,7 @@ except:
 model.half()
 
 T_val = build_transform(
-    "resize_512x512"
+    "resize_1024x1024"
 )
 
 print("Model loaded.")
@@ -157,13 +157,7 @@ for idx, stem in enumerate(
             output[0].cpu() * 0.5 + 0.5
         )
 
-        output_pil = output_pil.resize(
-            (
-                input_image.width,
-                input_image.height
-            ),
-            Image.LANCZOS
-        )
+
 
         save_path = (
             OUTPUT_DIR /
